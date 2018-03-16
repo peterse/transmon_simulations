@@ -62,7 +62,41 @@ def ketify(ket, M, LaTeX=False):
 
     return full_ket
 
+def pad_ket(phi, N):
+    # passed a FOCK state ket phi, pad it until it has shape (N, 1)
 
+    # shape should be (X, 1)
+    if phi.shape[1] != 1:
+        raise TypeError("pad_ket cannot accept bra state")
+
+    # extract info on the
+    M = phi.shape[0]
+    if M >= N:
+        return phi
+    out = []
+    for v in phi:
+        out.append(v[0][0])
+    for k in range(N-M):
+        out.append(0)
+    return qt.Qobj(np.array(out))
+
+# def truncate_ket(phi,N):
+#     # passed a fock state ket phi, cut off the last (n-len(phi)) values
+#
+#     # shape should be (X, 1)
+#     if phi.shape[1] != 1:
+#         raise TypeError("pad_ket cannot accept bra state")
+#
+#     # extract info on the
+#     M = phi.shape[0]
+#     if M >= N:
+#         return phi
+#     out = []
+#     for v in phi:
+#         out.append(v[0][0])
+#     for k in range(N - M):
+#         out.append(0)
+#     return qt.Qobj(np.array(out))
 
 
 # TESTING
