@@ -80,6 +80,10 @@ def pad_ket(phi, N):
         out.append(0)
     return qt.Qobj(np.array(out))
 
+
+
+
+
 # def truncate_ket(phi,N):
 #     # passed a fock state ket phi, cut off the last (n-len(phi)) values
 #

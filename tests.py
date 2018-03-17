@@ -12,7 +12,7 @@ def test_transmon_frequency(ej, ec):
     w0 = np.sqrt(8*ej*ec)
     xi = np.sqrt(2*ec/ej)
     N = 3 # 3-level system
-    order_max = 5
+    order_max = 10
 
     freq = w0 - ec*(1 + xi/2**2 + 21*xi**2/2**7 + 19*xi**3/2**7 + 5319*xi**4/2**15)
     anharm = ec*(1 + 9*xi/2**4 + 81*xi**2/2**7 + 3645*xi**3/2**12 + 46899*xi**4/2**15)

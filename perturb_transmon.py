@@ -7,6 +7,7 @@ import math
 import sys
 from timer import Timer
 from qtools import pad_ket
+import io_tools as io
 
 # # # # # # # # # # # # # # # # # # # #
 # Initialization
@@ -52,6 +53,12 @@ def En_p(n, p, w0, N):
     :return:
     """
 
+    filename = io.get_dumpname_En(n, p, w0, N)
+    load_check = io.load_obj(filename, io.tempdir)
+    if load_check is not None:
+        # must decode the json str formatting I imposed in io_tools.py
+        return complex(load_check)
+
     # 0th order energy is Harmonic Oscillator solution
     if p == 0:
         return n*w0
@@ -83,6 +90,9 @@ def En_p(n, p, w0, N):
             # print(psi_n_p(n, q, w0, N), N+4*(p-q))
             print("PSI=",psi_n.dag())
         out += nbra.overlap(H*psi_n)
+
+    # dump to tempdir for future use
+    io.dump_obj(io.complex2str(out), filename, io.tempdir)
     return out
 
 
@@ -96,6 +106,13 @@ def psi_n_p(n, p, w0, N):
     :param N: Size of the ORIGINAL Hspace; this will be modified according to the order p of calculation
     :return: p-th order nth eigenstate PSI, with SIZE = N + 4*p
     """
+
+    filename = io.get_dumpname_Psi(n, p, w0, N)
+    load_check = io.load_obj(filename, io.tempdir)
+    if load_check is not None:
+        if DEBUG:
+            print("loading psi from file %i" % filename)
+        return io.decode_ket(load_check)
 
     # adjusted size of Fock state Hspace to account for larger H_u
     NN = N + 4*p
@@ -128,6 +145,8 @@ def psi_n_p(n, p, w0, N):
             qth = qt.fock(N+4*q, m).dag()*(H_u(p-q, w0, N+4*q)- En_p(n, p-q, w0, N+4*q))*psi_n_q*qt.fock(N+4*p, m)
             out += qth/( w0*(n-m))
 
+    filename = io.get_dumpname_Psi(n, p, w0, N)
+    io.dump_obj(io.encode_ket(out), filename, io.tempdir)
     return out
 
 
