@@ -112,7 +112,7 @@ def psi_n_p(n, p, w0, N):
     if load_check is not None:
         if DEBUG:
             print("loading psi from file %i" % filename)
-        return io.decode_ket(load_check)
+        return load_check
 
     # adjusted size of Fock state Hspace to account for larger H_u
     NN = N + 4*p
@@ -145,8 +145,7 @@ def psi_n_p(n, p, w0, N):
             qth = qt.fock(N+4*q, m).dag()*(H_u(p-q, w0, N+4*q)- En_p(n, p-q, w0, N+4*q))*psi_n_q*qt.fock(N+4*p, m)
             out += qth/( w0*(n-m))
 
-    filename = io.get_dumpname_Psi(n, p, w0, N)
-    io.dump_obj(io.encode_ket(out), filename, io.tempdir)
+    io.dump_obj(out, filename, io.tempdir)
     return out
 
 
@@ -157,6 +156,14 @@ def H_u(u, w0, N):
     :param N: size of operator hilbert space
     :return: H_u of Hspace SIZE=N
     """
+
+
+    filename = io.get_dumpname_H(u, w0, N)
+    load_check = io.load_obj(filename, io.tempdir)
+    if load_check is not None:
+        if DEBUG:
+            print("loading psi from file %i" % filename)
+        return load_check
 
     # the hamiltonian will include raising operators like a^(2u + 2), increasing the Hspace size N by 4
     # per order in u
@@ -181,6 +188,7 @@ def H_u(u, w0, N):
                 # print(k3)
                 out += w0*k1*k2*k3
 
+    io.dump_obj(out, filename, io.tempdir)
     return out
 
 

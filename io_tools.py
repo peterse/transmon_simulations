@@ -85,14 +85,21 @@ def get_dumpname_En(n, p, w0, N):
 
 def get_dumpname_Psi(n, p, w0, N):
     # generate a filename for dumping En loads
-    return "Psi_%i_%i_%5.4f_%i.json" % (n, p, w0, N)
+    return "Psi_%i_%i_%5.4f_%i.qt" % (n, p, w0, N)
+
+def get_dumpname_H(u, w0, N):
+    # generate a filename for u-th order hamiltonian
+    return "H_%i_%5.4f_%i.qt" % (u, w0, N)
 
 def dump_obj(obj, filename, path):
     #serialize a python object to a file
     #A file takes a single object.
     with cd(path):
-        with open(filename, "w+") as fh:
-            json.dump(obj, fh)
+        # loading Qobjs
+        if type(obj) is qt.qobj.Qobj:
+            qt.file_data_store(filename, obj)
+        # Loading anything else (probably string)
+        else:
     return filename
 
 def load_obj(filename, path):
@@ -100,12 +107,25 @@ def load_obj(filename, path):
     # WARNING - returns None if the file does not exist! Use with caution
     # default return for no object found: "None"
     with cd(path):
-        try:
-            obj = json.load(open(filename))
-            return obj
+        # Loading qobjs
+        if ".qt" in filename:
+            try:
+                obj = qt.file_data_read(filename, sep=",")
 
-        except IOError:
-            return None
+            except FileNotFoundError:
+                return None
+
+            return qt.Qobj(obj)
+
+        # in the case of anything NOT qobj, I would like not to use their unpacking method
+        else:
+            try:
+                obj = json.load(open(filename))
+                return obj
+
+            except IOError:
+                return None
+
 
 
 #
