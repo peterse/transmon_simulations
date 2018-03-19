@@ -100,6 +100,7 @@ def dump_obj(obj, filename, path):
             qt.file_data_store(filename, obj)
         # Loading anything else (probably string)
         else:
+            json.dump(obj, open(filename, "w+"))
     return filename
 
 def load_obj(filename, path):
