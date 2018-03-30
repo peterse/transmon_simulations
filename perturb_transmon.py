@@ -234,7 +234,9 @@ def get_H_co(umax, w0, g, wr, N_qb, N_res, xi):
 
     # resonator H.O. hamiltonian
     b = qt.destroy(N=N_res)
-    H_res = qt.tensor(qt.qeye(N_qb), wr*b.dag()*b)
+    Id_tr = qt.qeye(N_qb)
+    Id_tr.dims = [ [N_qb, 1], [1, N_qb]] # explicitly aliasing the identity to look like two
+    H_res = qt.tensor(Id_tr, wr*b.dag()*b)
 
     # transmon term
     H_tr = 0
@@ -261,12 +263,7 @@ def get_H_co(umax, w0, g, wr, N_qb, N_res, xi):
 
             # qubit coupling term looks like raising/lowering operator
             if i != j:
-                print(ket_i.dims)
-                print(qt.fock(N_qb,0).dims)
-                print(truncate_ket(ket_i, N_qb).dims)
-                print(qt.tensor(truncate_ket(ket_i, N_qb), truncate_ket(ket_j, N_qb).dag()).dims)
                 H_co += g_ij*qt.tensor(truncate_ket(ket_i, N_qb), truncate_ket(ket_j, N_qb).dag(), b+b.dag())
-                print(H_co.dims)
             break
 
     print(H_tr)

@@ -102,7 +102,7 @@ def truncate_ket(phi,N):
         out.append(phi[k][0][0])
     return qt.Qobj(np.array(out)).unit()
 
-def qeye_subspaced(N):
+def qeye2(N):
     # create an identity out of adding outer products
     out = 0
     for i in range(N):
