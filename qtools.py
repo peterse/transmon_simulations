@@ -63,45 +63,52 @@ def ketify(ket, M, LaTeX=False):
     return full_ket
 
 def pad_ket(phi, N):
-    # passed a FOCK state ket phi, pad it until it has shape (N, 1)
+    # passed a FOCK state ket phi, pad it until it has length N OR GREATER
 
     # shape should be (X, 1)
     if phi.shape[1] != 1:
         raise TypeError("pad_ket cannot accept bra state")
 
-    # extract info on the
+    # if phi is larger than N dims, do nothing.
     M = phi.shape[0]
     if M >= N:
         return phi
+
+    # otherwise, fill the output list with all of phi's values, then N zeros
     out = []
     for v in phi:
         out.append(v[0][0])
     for k in range(N-M):
         out.append(0)
-    return qt.Qobj(np.array(out))
+    return qt.Qobj(np.array(out)).unit()
 
 
 
+def truncate_ket(phi,N):
+    # passed a fock state ket phi, truncate to length N OR LESS
 
+    # shape should be (X, 1)
+    if phi.shape[1] != 1:
+        raise TypeError("pad_ket cannot accept bra state")
 
-# def truncate_ket(phi,N):
-#     # passed a fock state ket phi, cut off the last (n-len(phi)) values
-#
-#     # shape should be (X, 1)
-#     if phi.shape[1] != 1:
-#         raise TypeError("pad_ket cannot accept bra state")
-#
-#     # extract info on the
-#     M = phi.shape[0]
-#     if M >= N:
-#         return phi
-#     out = []
-#     for v in phi:
-#         out.append(v[0][0])
-#     for k in range(N - M):
-#         out.append(0)
-#     return qt.Qobj(np.array(out))
+    # extract info on the size. if phi is already shorter than N, no need to truncate
+    M = phi.shape[0]
+    if M <= N:
+        return phi
 
+    # otherwise, fill a list with the first N values of phi and turn that list into a normalized ket
+    out = []
+    for k in range(N):
+        out.append(phi[k][0][0])
+    return qt.Qobj(np.array(out)).unit()
+
+def qeye_subspaced(N):
+    # create an identity out of adding outer products
+    out = 0
+    for i in range(N):
+        v = qt.fock(N,i)
+        out+= v*v.dag()
+    return out
 
 # TESTING
 # ket = qt.Qobj([ [.2], [0], [.4], [.1], [0], [.6], [.4], [.1], [0],])

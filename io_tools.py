@@ -92,6 +92,7 @@ def get_dumpname_H(u, w0, N):
     return "H_%i_%5.4f_%i.qt" % (u, w0, N)
 
 def dump_obj(obj, filename, path):
+    # TODO: rearrange directory structure so temp doesn't get too crowded!
     #serialize a python object to a file
     #A file takes a single object.
     with cd(path):

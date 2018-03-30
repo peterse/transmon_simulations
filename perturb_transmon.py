@@ -7,6 +7,7 @@ import math
 import sys
 from timer import Timer
 from qtools import pad_ket
+from qtools import truncate_ket
 import io_tools as io
 
 # # # # # # # # # # # # # # # # # # # #
@@ -20,8 +21,21 @@ time = Timer()
 
 # GLOBAL PARAMS debug
 W0 = 1
+WR = 1.2
 XI = .1
+G = .2
 # # # # # # # # # # # # # # # # # # # #
+
+def get_phieff(phiext, ej1, ej2):
+    # didier eqn 17
+    return np.arctan2(np.sin(phiext), np.cos(phiext)+ej2/ej1)
+
+def get_ejeff(phiext, ej1, ej2):
+    # didier eqn 16
+    return np.sqrt(ej1**2 + ej2**2 + 2*ej1*ej2*np.cos(phiext))
+
+
+
 
 
 def get_En(n, pmax, w0, N, xi):
@@ -79,7 +93,7 @@ def En_p(n, p, w0, N):
         # if psi_n is larger than the Hamiltonian, H and |n> must be computed to that size
         elif q > p-q:
             psi_n = psi_raw
-            H = H = H_u(p-q, w0, N+4*q)
+            H = H_u(p-q, w0, N+4*q)
             nbra = qt.fock(N+4*q, n).dag()
 
         if DEBUG:
@@ -95,6 +109,14 @@ def En_p(n, p, w0, N):
     io.dump_obj(io.complex2str(out), filename, io.tempdir)
     return out
 
+def get_psi_n(n, umax, w0, N, xi):
+    # Calculate the full perturbed eigenstate to umax-order, with full length N
+    # WARNING: DOES NOT TRUNCATE! returns vector length n+4*umax
+    out = 0
+    for u in range(umax):
+        out += xi**u*pad_ket(psi_n_p(n, u, w0, N), N+4*umax)
+
+    return out.unit()
 
 def psi_n_p(n, p, w0, N):
     """
@@ -146,13 +168,15 @@ def psi_n_p(n, p, w0, N):
             out += qth/( w0*(n-m))
 
     io.dump_obj(out, filename, io.tempdir)
-    return out
+
+    return out.unit()
 
 
 def H_u(u, w0, N):
     """
     Get the transmon hamiltonian perturbative expansion to u-th order in xi
     :param u:
+    :param w0 = sqrt(8*EJ*EC)
     :param N: size of operator hilbert space
     :return: H_u of Hspace SIZE=N
     """
@@ -192,8 +216,69 @@ def H_u(u, w0, N):
     return out
 
 
-n = 1
-N = 3
-for u in range(3):
-    val = get_En(n,u,W0,N, XI)
-    print("ORDER %i En=" % u, val)
+
+
+def get_H_co(umax, w0, g, wr, N_qb, N_res, xi):
+    """
+    Get the coupled resonator-transmon hamiltonian perturbative expansion to u-th order in xi. This is the JCM model
+    Hamiltonian for the u-th order transmon states in the transmon basis, as in equation 3.2 in Koch (2007)
+    :param umax: Highest order of perturbation
+    :param wr: sqrt(8*EJ*EC)
+    :param N_qb: size of transmon operator hilbert space
+    :param N_res: size of resonator operator H space
+    :param g: Coupling constant for the transmon-resonator system
+    :param xi: sqrt(2EC/EJ)
+    :return
+    """
+    #FIXME how do i determine g? Which "g" is it anyway?
+
+    # resonator H.O. hamiltonian
+    b = qt.destroy(N=N_res)
+    H_res = qt.tensor(qt.qeye(N_qb), wr*b.dag()*b)
+
+    # transmon term
+    H_tr = 0
+
+    # coupling term
+    H_co = 0
+
+    #FIXME : WHEN DO I PROPERLY TRUNCATE??? currently: Get the coupling matrix values using full space, then truncate
+    # FIXME once you're constructing the raising/lowering operators
+    for i in range(N_qb):
+        ket_i = get_psi_n(i, umax, w0, N_qb, xi)
+
+        Ei = get_En(i, umax, w0, N_qb, xi)
+        H_tr += Ei * qt.tensor(truncate_ket(ket_i, N_qb), truncate_ket(ket_i, N_qb).dag(), qt.qeye(N_res))
+
+        for j in range(N_qb):
+            ket_j = get_psi_n(j, umax, w0, N_qb, xi)
+
+            # find the coupling terms by calculating <j | n_tr | i>
+            # psi_n_p has size N_qb + 4*u !!!
+            a = qt.destroy(N=N_qb+4*umax)
+            n_tr = 1j / (2 * xi) * (a.dag() - a)
+            g_ij = g*ket_i.dag()*n_tr*ket_j
+
+            # qubit coupling term looks like raising/lowering operator
+            if i != j:
+                print(ket_i.dims)
+                print(qt.fock(N_qb,0).dims)
+                print(truncate_ket(ket_i, N_qb).dims)
+                print(qt.tensor(truncate_ket(ket_i, N_qb), truncate_ket(ket_j, N_qb).dag()).dims)
+                H_co += g_ij*qt.tensor(truncate_ket(ket_i, N_qb), truncate_ket(ket_j, N_qb).dag(), b+b.dag())
+                print(H_co.dims)
+            break
+
+    print(H_tr)
+    print(H_res)
+    print(H_co)
+
+    return H_tr + H_res + H_co
+
+
+
+
+
+
+if __name__ == "__main__":
+    H_co_u(3, W0, G, WR, 3, 4, XI)
