@@ -2,6 +2,8 @@ import perturb_transmon as transmon
 import numpy as np
 from timer import Timer
 import matplotlib.pyplot as plt
+import qtools
+import io_tools
 
 
 
@@ -120,17 +122,68 @@ def test_transmon_tuning(ej1, ej2, ec):
 
 def test_transmon_coupling(ej1, ej2, ec, g, wr):
 
+    # strategy here: H_tr has been coupled to resonator space; to get phi-dependence just calculate
+    # parameters based on effective phi, effective Ej
+    # then use qutip's diagonalization to sort out the frequencies
+    #FIXME: Can I just plug in the effective Ej, effective phi and work out the corresponding H_tr??
 
-    w0 = np.sqrt(8*ej1*ec)
-    xi = np.sqrt(2*ec/ej1)
+    Nqb = 2 # 3-level qubit system
+    Nres = 3 # resonator levels
+    order = 5
 
-    Nqb = 2 # 3-level system
-    Nres = 4 # resonator levels
-    order = 2
 
-    H_co = transmon.get_H_co(order, w0, g, wr, Nqb, Nres, xi)
+    fig = plt.figure()
+
+    # look at different structures for a variety of subspace extents
+    for A, Nqb in enumerate([2,3]):
+        for B, Nres in enumerate([2,3,4]):
+
+            # Strategy: Precalculate effective Ej, phi and
+            steps = 20
+            max = 2*np.pi
+            phi_arr = np.arange(max/steps , max, max/steps) # avoid phi=0
+
+            eps = .001
+            for i, val in enumerate(phi_arr):
+                if val < np.pi + eps and val > np.pi - eps:
+                   phi_arr =  np.delete(phi_arr, i)
+
+            # we will calculate a list of frequencies for every external flux
+            freq_matrix = [None for k in phi_arr]
+            # ej, w0, xi must be calculated within the loop since they all depend on phi ext now
+            for i, phiext in enumerate(phi_arr):
+                ejeff = transmon.get_ejeff(phiext, ej1, ej2)
+                phieff = transmon.get_phieff(phiext, ej1, ej2)
+                w0 = np.sqrt(8 * ejeff * ec)
+                xi = np.sqrt(2 * ec / ejeff)
+
+                # coupled total hamiltonian depends on phi-dependent frequency
+                H_co = transmon.get_H_co(order, w0, g, wr, Nqb, Nres, xi)
+                energies = H_co.eigenstates()[0]
+                # get the frequencies corresponding to this flux value
+                freqs = qtools.get_frequencies(energies)
+                freq_matrix[i] = freqs
+
+            # plot qubit frequency vs. external flux
+            freq_matrix = np.array(freq_matrix).transpose()
+            ax1 = fig.add_subplot(2,3,3*A+B+1) # goofy indexing for subplots...
+            for col in freq_matrix:
+                ax1.plot(phi_arr, col)
+            ax1.set_ylabel("freq")
+            ax1.set_xlabel("phi_ext")
+            ax1.set_title("Nqb=%i Nres=%i" % (Nqb, Nres))
+
+
+    plt.show()
+
+
+def test_io():
+    io_tools.clear_temp()
+
+
 
 time = Timer()
+io_tools.clear_temp()
 #test_transmon_frequency(10,1)
 #test_transmon_tuning(10,10, 1)
 test_transmon_coupling(10,10, 1, .2, 9)

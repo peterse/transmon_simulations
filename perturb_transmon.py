@@ -247,15 +247,16 @@ def get_H_co(umax, w0, g, wr, N_qb, N_res, xi):
     #FIXME : WHEN DO I PROPERLY TRUNCATE??? currently: Get the coupling matrix values using full space, then truncate
     # FIXME once you're constructing the raising/lowering operators
     for i in range(N_qb):
-        ket_i = get_psi_n(i, umax, w0, N_qb, xi)
 
+        # take advantage of recursive functions for uncoupled transmon energies/states
+        ket_i = get_psi_n(i, umax, w0, N_qb, xi)
         Ei = get_En(i, umax, w0, N_qb, xi)
         H_tr += Ei * qt.tensor(truncate_ket(ket_i, N_qb), truncate_ket(ket_i, N_qb).dag(), qt.qeye(N_res))
 
+        # now construct coupling coefficients by calculating <j | n_tr | i>
         for j in range(N_qb):
             ket_j = get_psi_n(j, umax, w0, N_qb, xi)
 
-            # find the coupling terms by calculating <j | n_tr | i>
             # psi_n_p has size N_qb + 4*u !!!
             a = qt.destroy(N=N_qb+4*umax)
             n_tr = 1j / (2 * xi) * (a.dag() - a)
@@ -264,11 +265,10 @@ def get_H_co(umax, w0, g, wr, N_qb, N_res, xi):
             # qubit coupling term looks like raising/lowering operator
             if i != j:
                 H_co += g_ij*qt.tensor(truncate_ket(ket_i, N_qb), truncate_ket(ket_j, N_qb).dag(), b+b.dag())
-            break
 
-    print(H_tr)
-    print(H_res)
-    print(H_co)
+    # print(H_tr)
+    # print(H_res)
+    # print(H_co)
 
     return H_tr + H_res + H_co
 

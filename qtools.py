@@ -110,6 +110,20 @@ def qeye2(N):
         out+= v*v.dag()
     return out
 
+
+def get_frequencies(lst):
+    # passed a list of Energies, calculate frequencies with hbar = 1 and return a list of frequencies
+    out = []
+    for i in range(len(lst)):
+        for j in range(len(lst)):
+            if j <=i:
+                continue
+
+            # qutip orders eigenenergy arrays in ascending order
+            out.append(lst[j]-lst[i])
+    return out
+
+
 # TESTING
 # ket = qt.Qobj([ [.2], [0], [.4], [.1], [0], [.6], [.4], [.1], [0],])
 # print(ketify(ket, 1))

@@ -129,6 +129,13 @@ def load_obj(filename, path):
                 return None
 
 
+def clear_temp():
+    # delete all contents of the temp dir
+    with cd(tempdir):
+        print("CLEARING TEMP DIRECTORY %s" % tempdir)
+        for f in os.listdir():
+            os.remove(f)
+
 
 #
 # def clean_pickle(source, target):
